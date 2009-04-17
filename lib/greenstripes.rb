@@ -90,6 +90,10 @@ module GreenStripes
     def initialize(*args) # :nodoc:
     end
 
+    def ==(other)
+      self.artist == other.artist
+    end
+
     def tracks
       FakeArray.new(self, :tracks)
     end
@@ -101,6 +105,10 @@ module GreenStripes
 
   class AlbumBrowse
     def initialize(*args) # :nodoc:
+    end
+
+    def ==(other)
+      self.album == other.album
     end
 
     def tracks
