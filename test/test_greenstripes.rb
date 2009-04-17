@@ -233,4 +233,42 @@ class TestGreenStripes < Test::Unit::TestCase
     @session.process_events until search.loaded?
     assert_equal(GreenStripes::Error::OK, search.error)
   end
+
+  def test_artist_browse_with_callback
+    done = false
+    track = @playlist.track(0)
+    @session.process_events until track.loaded?
+    artist_browse = GreenStripes::ArtistBrowse.new(@session, track.artist(0)) do |result|
+      assert_equal(artist_browse, result)
+      done = true
+    end
+    @session.process_events until done
+  end
+
+  def test_artist_browse_without_callback
+    track = @playlist.track(0)
+    @session.process_events until track.loaded?
+    artist_browse = GreenStripes::ArtistBrowse.new(@session, track.artist(0))
+    @session.process_events until artist_browse.loaded?
+    assert_equal(GreenStripes::Error::OK, artist_browse.error)
+  end
+
+  def test_album_browse_with_callback
+    done = false
+    track = @playlist.track(0)
+    @session.process_events until track.loaded?
+    album_browse = GreenStripes::AlbumBrowse.new(@session, track.album) do |result|
+      assert_equal(album_browse, result)
+      done = true
+    end
+    @session.process_events until done
+  end
+
+  def test_album_browse_without_callback
+    track = @playlist.track(0)
+    @session.process_events until track.loaded?
+    album_browse = GreenStripes::AlbumBrowse.new(@session, track.album)
+    @session.process_events until album_browse.loaded?
+    assert_equal(GreenStripes::Error::OK, album_browse.error)
+  end
 end
