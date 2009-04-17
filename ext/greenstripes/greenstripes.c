@@ -70,12 +70,22 @@ static void search_complete_callback(sp_search *result, void *userdata)
 
 static void artist_browse_complete_callback(sp_artistbrowse *result, void *userdata)
 {
-  //fprintf(stderr, "artist_browse_complete_callback\n");
+  VALUE proc = (VALUE)userdata;
+  if(proc != Qnil)
+  {
+    VALUE r = result ? Data_Wrap_Struct(class_artist_browse, NULL, NULL, result) : Qnil;
+    rb_funcall(proc, rb_intern("call"), 1, r);
+  }
 }
 
 static void album_browse_complete_callback(sp_albumbrowse *result, void *userdata)
 {
-  //fprintf(stderr, "album_browse_complete_callback\n");
+  VALUE proc = (VALUE)userdata;
+  if(proc != Qnil)
+  {
+    VALUE r = result ? Data_Wrap_Struct(class_album_browse, NULL, NULL, result) : Qnil;
+    rb_funcall(proc, rb_intern("call"), 1, r);
+  }
 }
 
 /*
@@ -694,24 +704,23 @@ static void artist_browse_free(void *ab)
  */
 static VALUE artist_browse_new(VALUE klass, VALUE session, VALUE artist)
 {
-  // TODO: artist browse callback should not be hardcoded
+  VALUE proc = rb_block_given_p() ? rb_block_proc() : Qnil;
 
-  sp_session *s;
+  sp_session *s = NULL;
   Data_Get_Struct(session, sp_session, s);
 
-  sp_artist *a;
+  sp_artist *a = NULL;
   Data_Get_Struct(artist, sp_artist, a);
 
-  sp_artistbrowse *artistbrowse = NULL;
-  artistbrowse = sp_artistbrowse_create(s, a, artist_browse_complete_callback, NULL);
-
-  if(!artistbrowse)
+  sp_artistbrowse *ab = NULL;
+  ab = sp_artistbrowse_create(s, a, artist_browse_complete_callback, (void *)proc);
+  if(!ab)
     return Qnil;
 
-  VALUE ab_value = Data_Wrap_Struct(class_artist_browse, NULL, artist_browse_free, artistbrowse);
+  VALUE artist_browse = Data_Wrap_Struct(class_artist_browse, NULL, artist_browse_free, ab);
   VALUE argv[2] = {session, artist};
-  rb_obj_call_init(ab_value, 2, argv);
-  return ab_value;
+  rb_obj_call_init(artist_browse, 2, argv);
+  return artist_browse;
 }
 
 /*
@@ -830,24 +839,23 @@ static void album_browse_free(void *ab)
  */
 static VALUE album_browse_new(VALUE klass, VALUE session, VALUE album)
 {
-  // TODO: album browse callback should not be hardcoded
+  VALUE proc = rb_block_given_p() ? rb_block_proc() : Qnil;
 
-  sp_session *s;
+  sp_session *s = NULL;
   Data_Get_Struct(session, sp_session, s);
 
-  sp_album *a;
+  sp_album *a = NULL;
   Data_Get_Struct(album, sp_album, a);
 
-  sp_albumbrowse *albumbrowse = NULL;
-  albumbrowse = sp_albumbrowse_create(s, a, album_browse_complete_callback, NULL);
-
-  if(!albumbrowse)
+  sp_albumbrowse *ab = NULL;
+  ab = sp_albumbrowse_create(s, a, album_browse_complete_callback, (void *)proc);
+  if(!ab)
     return Qnil;
 
-  VALUE ab_value = Data_Wrap_Struct(class_album_browse, NULL, album_browse_free, albumbrowse);
+  VALUE album_browse = Data_Wrap_Struct(class_album_browse, NULL, album_browse_free, ab);
   VALUE argv[2] = {session, album};
-  rb_obj_call_init(ab_value, 2, argv);
-  return ab_value;
+  rb_obj_call_init(album_browse, 2, argv);
+  return album_browse;
 }
 
 /*
