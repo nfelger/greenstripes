@@ -129,8 +129,7 @@ class TestGreenStripes < Test::Unit::TestCase
   end
 
   def test_fake_array_for_search
-    query = 'a'
-    search = GreenStripes::Search.new(@session, query, 0, 1)
+    search = GreenStripes::Search.new(@session, 'a', 0, 1)
     @session.process_events until search.loaded?
     assert_equal(GreenStripes::Error::OK, search.error)
 
@@ -218,5 +217,14 @@ class TestGreenStripes < Test::Unit::TestCase
     track.artists.each do |a|
       assert_not_nil(a)
     end
+  end
+
+  def test_search_callback
+    done = false
+    search = GreenStripes::Search.new(@session, 'a', 0, 1) do |result|
+      assert_equal(GreenStripes::Error::OK, search.error)
+      done = true
+    end
+    @session.process_events until done
   end
 end
