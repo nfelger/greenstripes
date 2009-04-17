@@ -219,12 +219,18 @@ class TestGreenStripes < Test::Unit::TestCase
     end
   end
 
-  def test_search_callback
+  def test_search_with_callback
     done = false
     search = GreenStripes::Search.new(@session, 'a', 0, 1) do |result|
-      assert_equal(GreenStripes::Error::OK, search.error)
+      assert_equal(search, result)
       done = true
     end
     @session.process_events until done
+  end
+
+  def test_search_without_callback
+    search = GreenStripes::Search.new(@session, 'a', 0, 1)
+    @session.process_events until search.loaded?
+    assert_equal(GreenStripes::Error::OK, search.error)
   end
 end
