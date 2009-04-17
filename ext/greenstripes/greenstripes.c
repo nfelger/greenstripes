@@ -60,7 +60,12 @@ static void log_message_callback(sp_session *session, const char *data)
 
 static void search_complete_callback(sp_search *result, void *userdata)
 {
-  //fprintf(stderr, "search_complete_callback\n");
+  VALUE proc = (VALUE)userdata;
+  if(proc != Qnil)
+  {
+    VALUE r = result ? Data_Wrap_Struct(class_search, NULL, NULL, result) : Qnil;
+    rb_funcall(proc, rb_intern("call"), 1, r);
+  }
 }
 
 static void artist_browse_complete_callback(sp_artistbrowse *result, void *userdata)
@@ -517,26 +522,21 @@ static void search_free(void *search)
  */
 static VALUE search_new(VALUE klass, VALUE session, VALUE query, VALUE offset, VALUE count)
 {
-  // TODO: search callback should not be hardcoded
+  // assert(sizeof(VALUE) == sizeof(void *));
+  VALUE proc = rb_block_given_p() ? rb_block_proc() : Qnil;
 
-  sp_session *sess;
-  Data_Get_Struct(session, sp_session, sess);
+  sp_session *ss = NULL;
+  Data_Get_Struct(session, sp_session, ss);
 
-  sp_search *search = NULL;
-  search = sp_search_create(sess,
-                            StringValuePtr(query),
-                            FIX2INT(offset),
-                            FIX2INT(count),
-                            search_complete_callback,
-                            NULL);
-
-  if(!search)
+  sp_search *sr = NULL;
+  sr = sp_search_create(ss, StringValuePtr(query), FIX2INT(offset), FIX2INT(count), search_complete_callback, (void *)proc);
+  if(!sr)
     return Qnil;
 
-  VALUE search_value = Data_Wrap_Struct(class_search, NULL, search_free, search);
+  VALUE search = Data_Wrap_Struct(class_search, NULL, search_free, sr);
   VALUE argv[4] = {session, query, offset, count};
-  rb_obj_call_init(search_value, 4, argv);
-  return search_value;
+  rb_obj_call_init(search, 4, argv);
+  return search;
 }
 
 /*
